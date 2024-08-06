@@ -1,0 +1,46 @@
+# You can name this whatever you want
+name: daily
+
+# You will get an error on the automatic updates committing if you do not have this line
+# You didn't need it before, which is why a lot of yml job files
+# you see will not have it (but you need it now!!!)
+# this allows Github actions to edit your repository
+permissions:
+  contents: write
+  
+# The 'on' section is about when this is run
+# workflow_dispatch makes there be a button on GitHub to let you run it manually
+# schedule and cron make it run at certain frequencies
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/5 * * * 2'
+    # * * * * * <command to execute>
+# | | | | |
+# | | | | day of the week (0–6) (Sunday to Saturday; 
+# | | | month (1–12)             7 is also Sunday on some systems)
+# | | day of the month (1–31)
+# | hour (0–23)
+# minute (0–59)
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out this repo
+      uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.10'
+    - name: Install all necessary packages
+      run: pip install jupyter lxml pandas requests beautifulsoup4 html5lib # add whatever I used in the notebook
+    - name: Scraping today's data
+      run: jupyter nbconvert --to notebook --execute "El Pais.ipynb" --stdout #change to match whatever the filename is
+    - name: Commit and push any changes
+      run: |-
+        git config user.name "Automated"
+        git config user.email "actions@users.noreply.github.com"
+        git add -A
+        timestamp=$(date -u)
+        git commit -m "Latest data: ${timestamp}" || exit 0
+        git push
